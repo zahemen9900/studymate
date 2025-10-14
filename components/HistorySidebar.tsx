@@ -1,25 +1,31 @@
 import React from 'react';
-import { Session } from '../types';
-import { PenSquareIcon, TrashIcon, XIcon } from './Icons';
+import { Session, UserSettings } from '../types';
+import { PenSquareIcon, TrashIcon, XIcon, UserIcon, SettingsIcon, LogOutIcon } from './Icons';
 
 interface HistorySidebarProps {
     isOpen: boolean;
     sessions: Session[];
     activeSessionId: string | null;
+    userSettings: UserSettings;
     onSelectSession: (id: string) => void;
     onNewChat: () => void;
     onDeleteSession: (id: string) => void;
     onClose: () => void;
+    onShowSettings: () => void;
+    onSignOut: () => void;
 }
 
 const HistorySidebar: React.FC<HistorySidebarProps> = ({
     isOpen,
     sessions,
     activeSessionId,
+    userSettings,
     onSelectSession,
     onNewChat,
     onDeleteSession,
     onClose,
+    onShowSettings,
+    onSignOut,
 }) => {
     return (
         <>
@@ -31,7 +37,7 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
             ></div>
             <aside
                 className={`fixed top-0 left-0 h-full bg-surface w-72 flex flex-col z-40 transition-transform duration-300 ease-in-out
-                    md:relative md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full md:-ml-72'}`}
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
             >
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
                     <h2 className="text-lg font-semibold">History</h2>
@@ -77,6 +83,25 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
                         </div>
                     ))}
                 </nav>
+
+                <div className="mt-auto p-3 border-t border-white/10">
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-primary-700 flex items-center justify-center">
+                                <UserIcon className="w-5 h-5 text-white" />
+                            </div>
+                            <span className="font-semibold text-sm truncate">{userSettings.nickname}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                             <button onClick={onShowSettings} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors" aria-label="Settings">
+                                <SettingsIcon className="w-5 h-5" />
+                            </button>
+                            <button onClick={onSignOut} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-md transition-colors" aria-label="Sign Out">
+                                <LogOutIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </aside>
         </>
     );

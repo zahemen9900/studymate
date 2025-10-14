@@ -8,11 +8,12 @@ import ActionButtons from './ActionButtons';
 import Quiz from './Quiz';
 import Flashcards from './Flashcards';
 import StudyNotes from './StudyNotes';
-import { UserIcon, LightbulbIcon, ChevronDownIcon } from './Icons';
+import KnowledgeGraph from './KnowledgeGraph';
+import { UserIcon, LightbulbIcon } from './Icons';
 
 interface ChatMessageProps {
     message: Message;
-    onAction: (actionType: 'simplify' | 'analogy' | 'quiz' | 'flashcards' | 'notes', contextText: string) => void;
+    onAction: (actionType: 'simplify' | 'analogy' | 'quiz' | 'flashcards' | 'notes' | 'knowledgeGraph', contextText: string) => void;
 }
 
 const ThinkingAccordion: React.FC<{ content: string }> = ({ content }) => {
@@ -25,7 +26,6 @@ const ThinkingAccordion: React.FC<{ content: string }> = ({ content }) => {
                 className="flex justify-between items-center w-full py-2 text-sm text-gray-400 hover:text-white"
             >
                 <span>Model's Thinking Process</span>
-                <ChevronDownIcon className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             {isOpen && (
                 <div className="pb-2 pr-4 prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 text-gray-400">
@@ -46,9 +46,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onAction }) => {
     const containerClasses = isUser ? 'flex justify-end' : 'flex items-start space-x-4';
     const bubbleClasses = isUser
         ? 'bg-primary-600 text-white rounded-l-2xl rounded-t-2xl'
-        : 'bg-surface text-gray-200 rounded-r-2xl rounded-t-2xl shadow-md';
+        : 'bg-surface/90 backdrop-blur-sm text-gray-200 rounded-r-2xl rounded-t-2xl shadow-md border border-white/5';
 
     const content = message.text;
+    const contextForActions = message.actionContext ?? content;
 
     return (
         <div className={containerClasses}>
@@ -60,7 +61,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onAction }) => {
             <div className="flex flex-col items-start max-w-lg lg:max-w-3xl">
                 <div className={`p-4 ${bubbleClasses}`}>
                     {content && (
-                        <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none prose-p:my-2 prose-headings:my-3 prose-a:text-primary-300 hover:prose-a:underline w-full overflow-x-auto">
+                        <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none prose-p:my-2 prose-headings:my-3 prose-a:text-primary-300 hover:prose-a:underline w-full">
                             <ReactMarkdown
                                 remarkPlugins={[remarkGfm, remarkMath]}
                                 rehypePlugins={[rehypeKatex]}
@@ -75,10 +76,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onAction }) => {
                     {message.quizData && <Quiz quizData={message.quizData} />}
                     {message.flashcardData && <Flashcards flashcardData={message.flashcardData} />}
                     {message.studyNotesData && <StudyNotes notes={message.studyNotesData} />}
+                    {message.knowledgeGraphData && <KnowledgeGraph graphData={message.knowledgeGraphData} />}
                     {!isUser && message.thinking && <ThinkingAccordion content={message.thinking} />}
                 </div>
-                {!isUser && message.showActions && content && (
-                    <ActionButtons onAction={(action) => onAction(action, content!)} />
+                {!isUser && message.showActions && contextForActions && (
+                    <ActionButtons onAction={(action) => onAction(action, contextForActions)} />
                 )}
             </div>
              {isUser && (

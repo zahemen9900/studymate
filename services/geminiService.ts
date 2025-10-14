@@ -1,5 +1,5 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { Message, Sender, QuizData, FlashcardData, StudyNotesData } from '../types';
+import { GoogleGenAI, Type, Part, Modality } from "@google/genai";
+import { Message, Sender, QuizData, FlashcardData, StudyNotesData, UserSettings, KnowledgeGraphData } from '../types';
 
 if (!process.env.API_KEY) {
     throw new Error("API_KEY environment variable not set");
@@ -7,6 +7,30 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const model = 'gemini-2.5-flash';
+const ttsModel = 'gemini-2.5-flash-preview-tts';
+
+async function fileToGenerativePart(file: File): Promise<Part> {
+  const base64EncodedDataPromise = new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+        if (reader.result) {
+            resolve((reader.result as string).split(',')[1]);
+        } else {
+            reject(new Error("Failed to read file."));
+        }
+    };
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+  
+  const data = await base64EncodedDataPromise;
+  return {
+    inlineData: {
+      data,
+      mimeType: file.type,
+    },
+  };
+}
 
 const quizSchema = {
     type: Type.OBJECT,
@@ -80,12 +104,83 @@ const studyNotesSchema = {
     required: ["title", "content"]
 };
 
-export async function* generateTutorResponseStream(prompt: string, history: Message[]): AsyncGenerator<string> {
+const knowledgeGraphSchema = {
+    type: Type.OBJECT,
+    properties: {
+        nodes: {
+            type: Type.ARRAY,
+            description: "A list of nodes in the knowledge graph.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    id: { type: Type.STRING, description: "Unique identifier for the node." },
+                    data: {
+                        type: Type.OBJECT,
+                        properties: {
+                            label: { type: Type.STRING, description: "The display label for the node." }
+                        },
+                        required: ["label"]
+                    },
+                    position: {
+                        type: Type.OBJECT,
+                        properties: {
+                            x: { type: Type.NUMBER, description: "The x-coordinate for the node's initial position." },
+                            y: { type: Type.NUMBER, description: "The y-coordinate for the node's initial position." }
+                        },
+                         required: ["x", "y"]
+                    }
+                },
+                required: ["id", "data", "position"]
+            }
+        },
+        edges: {
+            type: Type.ARRAY,
+            description: "A list of edges connecting the nodes.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    id: { type: Type.STRING, description: "Unique identifier for the edge (e.g., 'e1-2')." },
+                    source: { type: Type.STRING, description: "The ID of the source node." },
+                    target: { type: Type.STRING, description: "The ID of the target node." },
+                    label: { type: Type.STRING, description: "Optional label describing the relationship." }
+                },
+                required: ["id", "source", "target"]
+            }
+        }
+    },
+    required: ["nodes", "edges"]
+};
+
+export async function* generateTutorResponseStream(prompt: string, history: Message[], settings: UserSettings, files: File[]): AsyncGenerator<string> {
     try {
+        let systemInstruction = `You are StudyMate, a friendly and encouraging AI Tutor. Your user's name is ${settings.nickname}.
+Before providing your main response, first think step-by-step about the user's query and outline your response plan inside <thinking>...</thinking> tags.
+If files are provided, analyze them as the primary context for your response.
+Then, provide your response. Explain concepts clearly. Use markdown for formatting when it improves readability (e.g., lists, bolding, code blocks).
+Use LaTeX for mathematical equations, enclosing inline math with '$' and block-level equations with '$$'.
+After your explanation, ask if the user understands or wants to dive deeper.`;
+
+        switch (settings.tone) {
+            case 'Concise':
+                systemInstruction += "\nYour tone should be concise and to-the-point. Avoid unnecessary chatter.";
+                break;
+            case 'Socratic':
+                systemInstruction += "\nYour tone should be Socratic. Guide the user by asking questions to help them discover the answer on their own, rather than giving the answer directly.";
+                break;
+            case 'Explanatory':
+            default:
+                systemInstruction += "\nYour tone should be explanatory, providing detailed and thorough explanations.";
+                break;
+        }
+
+        if (settings.customInstructions) {
+            systemInstruction += `\n\nAdditionally, always follow these user-provided instructions: "${settings.customInstructions}"`;
+        }
+
         const chat = ai.chats.create({
             model: model,
             config: {
-                systemInstruction: "You are StudyMate, a friendly and encouraging AI Tutor. Before providing your main response, first think step-by-step about the user's query and outline your response plan inside <thinking>...</thinking> tags. Then, provide your response. Explain concepts clearly and concisely. Use markdown for formatting when it improves readability (e.g., lists, bolding, code blocks). Use LaTeX for mathematical equations, enclosing inline math with `$` and block-level equations with `$$`. After your explanation, ask if the user understands or wants to dive deeper.",
+                systemInstruction,
             },
             history: history
                 .filter(msg => msg.text)
@@ -95,14 +190,30 @@ export async function* generateTutorResponseStream(prompt: string, history: Mess
                 }))
         });
         
-        const responseStream = await chat.sendMessageStream({ message: prompt });
+        const messageParts: Part[] = [{ text: prompt }];
+
+        if (files && files.length > 0) {
+            for (const file of files) {
+                // 4MB limit per file
+                if (file.size > 4 * 1024 * 1024) { 
+                    throw new Error(`File ${file.name} is too large. Maximum size is 4MB.`);
+                }
+                const part = await fileToGenerativePart(file);
+                messageParts.push(part);
+            }
+        }
+
+        const responseStream = await chat.sendMessageStream({ message: messageParts });
         for await (const chunk of responseStream) {
             yield chunk.text;
         }
 
     } catch (error) {
         console.error("Error generating tutor response stream:", error);
-        throw new Error("Failed to get a streaming response from the AI tutor.");
+        if (error instanceof Error) {
+            throw new Error(`Failed to get a streaming response from the AI tutor: ${error.message}`);
+        }
+        throw new Error("An unknown error occurred while contacting the AI tutor.");
     }
 };
 
@@ -211,5 +322,55 @@ export const generateStudyNotes = async (concept: string): Promise<StudyNotesDat
              throw new Error("Failed to parse the study notes from the AI. The format was invalid.");
         }
         throw new Error("Failed to create study notes.");
+    }
+};
+
+export const generateKnowledgeGraph = async (concept: string): Promise<KnowledgeGraphData> => {
+    try {
+        const response = await ai.models.generateContent({
+            model: model,
+            contents: `Based on the following text, create a knowledge graph with nodes and edges. Each node must have a unique ID, a label, and an x/y position between 0 and 500. Each edge must link two nodes.\n\n---\n${concept}\n---`,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: knowledgeGraphSchema,
+            },
+        });
+        const jsonText = response.text.trim();
+        const graphData = JSON.parse(jsonText);
+        if (!graphData.nodes || !graphData.edges) {
+            throw new Error("Invalid knowledge graph format received from AI.");
+        }
+        return graphData as KnowledgeGraphData;
+    } catch (error) {
+        console.error("Error generating knowledge graph:", error);
+        if (error instanceof SyntaxError) {
+            throw new Error("Failed to parse the knowledge graph from the AI. The format was invalid.");
+        }
+        throw new Error("Failed to create a knowledge graph.");
+    }
+};
+
+export const generateSpeech = async (text: string): Promise<string> => {
+    try {
+        const response = await ai.models.generateContent({
+            model: ttsModel,
+            contents: [{ parts: [{ text: `Read this clearly: ${text}` }] }],
+            config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                    voiceConfig: {
+                        prebuiltVoiceConfig: { voiceName: 'Kore' },
+                    },
+                },
+            },
+        });
+        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        if (!base64Audio) {
+            throw new Error("No audio data received from API.");
+        }
+        return base64Audio;
+    } catch (error) {
+        console.error("Error generating speech:", error);
+        throw new Error("Failed to generate speech from text.");
     }
 };

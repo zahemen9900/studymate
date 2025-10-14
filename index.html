@@ -17,20 +17,21 @@
           extend: {
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
+              georgia: ['Georgia', 'serif'],
             },
             colors: {
               'primary': {
-                '50': '#f0faff',
-                '100': '#e0f4ff',
-                '200': '#c2edff',
-                '300': '#99e2ff',
-                '400': '#66d3ff',
-                '500': '#33b9ff',
-                '600': '#0099e6',
-                '700': '#007bbb',
-                '800': '#006295',
-                '900': '#00527a',
-                '950': '#00314a',
+                '50': '#f0f9ff',
+                '100': '#e0f2fe',
+                '200': '#bae6fd',
+                '300': '#7dd3fc',
+                '400': '#38bdf8',
+                '500': '#0ea5e9',
+                '600': '#0284c7',
+                '700': '#0369a1',
+                '800': '#075985',
+                '900': '#0c4a6e',
+                '950': '#082f49',
               },
               'background': '#0A0A0A',
               'surface': '#1A1A1A',
@@ -38,8 +39,10 @@
             },
             animation: {
               'fade-in': 'fade-in 0.5s ease-out forwards',
-              'slide-up': 'slide-up 0.5s ease-out forwards',
+              'slide-up': 'slide-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards',
               'stars': 'stars 120s linear infinite',
+              'aurora-glow': 'aurora-glow 20s linear infinite alternate',
+              'blob-animate': 'blob-animate 15s infinite ease-in-out',
             },
             keyframes: {
               'fade-in': {
@@ -53,7 +56,17 @@
               'stars': {
                 'from': { 'background-position': '0 0' },
                 'to': { 'background-position': '-10000px 5000px' },
-              }
+              },
+              'aurora-glow': {
+                '0%': { transform: 'translateX(-10%) translateY(5%) scale(1.2) rotate(0deg)' },
+                '100%': { transform: 'translateX(10%) translateY(-5%) scale(1.2) rotate(15deg)' }
+              },
+              'blob-animate': {
+                '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                '100%': { transform: 'translate(0px, 0px) scale(1)' },
+              },
             }
           }
         }
@@ -65,6 +78,7 @@
     <script type="importmap">
       {
         "imports": {
+          "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
           "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
           "@google/genai": "https://aistudiocdn.com/@google/genai@^1.24.0",
           "react": "https://aistudiocdn.com/react@^19.2.0",
@@ -72,7 +86,9 @@
           "react-markdown": "https://aistudiocdn.com/react-markdown@^9.0.1",
           "remark-gfm": "https://aistudiocdn.com/remark-gfm@^4.0.0",
           "remark-math": "https://cdn.jsdelivr.net/npm/remark-math@6.0.0/+esm",
-          "rehype-katex": "https://cdn.jsdelivr.net/npm/rehype-katex@7.0.0/+esm"
+          "rehype-katex": "https://cdn.jsdelivr.net/npm/rehype-katex@7.0.0/+esm",
+          "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3.0.0/+esm",
+          "d3-zoom": "https://cdn.jsdelivr.net/npm/d3-zoom@3.0.0/+esm"
         }
       }
     </script>
@@ -93,9 +109,45 @@
     background-position: 0 0;
     animation: stars 120s linear infinite;
   }
+  .aurora-container::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image: 
+        radial-gradient(circle at 15% 30%, hsla(199, 100%, 60%, 0.12), transparent 40%),
+        radial-gradient(circle at 85% 70%, hsla(273, 80%, 65%, 0.12), transparent 40%);
+    filter: blur(80px);
+    animation: aurora-glow 20s linear infinite alternate;
+  }
+  .prose .katex-display {
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+    width: 100%;
+    padding: 0.5rem 0.2rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #6b7280 #374151;
+  }
+  .prose .katex-display::-webkit-scrollbar {
+    height: 8px;
+  }
+  .prose .katex-display::-webkit-scrollbar-track {
+    background: #374151;
+    border-radius: 4px;
+  }
+  .prose .katex-display::-webkit-scrollbar-thumb {
+    background: #6b7280;
+    border-radius: 4px;
+  }
+  .prose .katex-display::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
 </style>
 </head>
   <body class="bg-gray-100 dark:bg-background">
     <div id="root"></div>
+    <div id="modal-root"></div>
   </body>
 </html>

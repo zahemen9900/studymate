@@ -27,6 +27,24 @@ export interface StudyNotesData {
     content: string;
 }
 
+export interface Node {
+    id: string;
+    data: { label: string };
+    position: { x: number; y: number };
+}
+
+export interface Edge {
+    id: string;
+    source: string;
+    target: string;
+    label?: string;
+}
+
+export interface KnowledgeGraphData {
+    nodes: Node[];
+    edges: Edge[];
+}
+
 export interface Message {
     id: string;
     sender: Sender;
@@ -34,12 +52,26 @@ export interface Message {
     quizData?: QuizData;
     flashcardData?: FlashcardData;
     studyNotesData?: StudyNotesData;
+    knowledgeGraphData?: KnowledgeGraphData;
     showActions?: boolean;
     thinking?: string | null;
+    actionContext?: string;
 }
 
 export interface Session {
-    id: string;
+    id:string;
     title: string;
     messages: Message[];
+}
+
+export interface UserSettings {
+    nickname: string;
+    tone: 'Concise' | 'Explanatory' | 'Socratic';
+    customInstructions: string;
+}
+
+export interface UploadedFile {
+    id:string;
+    file: File;
+    previewUrl: string;
 }

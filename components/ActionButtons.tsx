@@ -1,8 +1,8 @@
 import React from 'react';
-import { SparklesIcon, PuzzlePieceIcon, BeakerIcon, BookOpenIcon, ClipboardDocumentListIcon } from './Icons';
+import { SparklesIcon, PuzzlePieceIcon, BeakerIcon, BookOpenIcon, ClipboardDocumentListIcon, NetworkIcon } from './Icons';
 
 interface ActionButtonsProps {
-    onAction: (action: 'simplify' | 'analogy' | 'quiz' | 'flashcards' | 'notes') => void;
+    onAction: (action: 'simplify' | 'analogy' | 'quiz' | 'flashcards' | 'notes' | 'knowledgeGraph') => void;
 }
 
 const ActionButton: React.FC<{ onClick: () => void; children: React.ReactNode; }> = ({ onClick, children }) => (
@@ -28,6 +28,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ onAction }) => {
              <ActionButton onClick={() => onAction('notes')}>
                 <ClipboardDocumentListIcon className="w-4 h-4" />
                 <span>Create Study Notes</span>
+            </ActionButton>
+             <ActionButton onClick={() => onAction('knowledgeGraph')}>
+                <NetworkIcon className="w-4 h-4" />
+                <span>Knowledge Graph</span>
             </ActionButton>
             <ActionButton onClick={() => onAction('flashcards')}>
                 <BookOpenIcon className="w-4 h-4" />
