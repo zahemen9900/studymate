@@ -1,6 +1,6 @@
 import React from 'react';
 import { Session, UserSettings } from '../types';
-import { PenSquareIcon, TrashIcon, XIcon, UserIcon, SettingsIcon, LogOutIcon } from './Icons';
+import { PenSquareIcon, TrashIcon, UserIcon, SettingsIcon, LogOutIcon, PanelLeftCloseIcon } from './Icons';
 
 interface HistorySidebarProps {
     isOpen: boolean;
@@ -52,8 +52,8 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
                                 New Chat
                             </span>
                         </button>
-                        <button onClick={onClose} className="p-2 rounded-md hover:bg-white/10 md:hidden">
-                            <XIcon className="w-6 h-6"/>
+                        <button onClick={onClose} className="p-2 rounded-md hover:bg-white/10">
+                            <PanelLeftCloseIcon className="w-6 h-6"/>
                         </button>
                     </div>
                 </div>

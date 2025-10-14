@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { zoom } from 'd3-zoom';
-import { select } from 'd3-selection';
-import { KnowledgeGraphData, Node, Edge } from '../types';
+import { KnowledgeGraphData } from '../types';
 import { ExpandIcon, XIcon } from './Icons';
+
+// Declare Cytoscape from CDN for TypeScript
+declare var cytoscape: any;
+declare var cytoscapeCola: any;
 
 interface CustomKnowledgeGraphProps {
     graphData: KnowledgeGraphData;
@@ -11,109 +13,122 @@ interface CustomKnowledgeGraphProps {
 }
 
 const CustomKnowledgeGraph: React.FC<CustomKnowledgeGraphProps> = ({ graphData, isInteractive }) => {
-    const svgRef = useRef<SVGSVGElement>(null);
-    const gRef = useRef<SVGGElement>(null);
-    const [viewBox, setViewBox] = useState('0 0 500 500');
+    const containerRef = useRef<HTMLDivElement>(null);
+    const cyRef = useRef<any>(null);
 
     useEffect(() => {
-        if (!graphData.nodes || graphData.nodes.length === 0) return;
+        if (!containerRef.current || !graphData || !cytoscape || !cytoscapeCola) return;
 
-        // Calculate bounding box to center the graph
-        const xCoords = graphData.nodes.map(n => n.position.x);
-        const yCoords = graphData.nodes.map(n => n.position.y);
-        const minX = Math.min(...xCoords) - 50;
-        const minY = Math.min(...yCoords) - 50;
-        const maxX = Math.max(...xCoords) + 50;
-        const maxY = Math.max(...yCoords) + 50;
-        const width = Math.max(maxX - minX, 1);
-        const height = Math.max(maxY - minY, 1);
-        setViewBox(`${minX} ${minY} ${width} ${height}`);
-    }, [graphData]);
+        // Register the cola layout extension if it hasn't been registered yet.
+        // This is a robust way to ensure the layout is available.
+        if (typeof cytoscape('core', 'cola') === 'undefined') {
+            cytoscape.use(cytoscapeCola);
+        }
 
-    useEffect(() => {
-        if (!isInteractive || !svgRef.current || !gRef.current) return;
+        // Combine nodes and edges for Cytoscape
+        const elements = [
+            ...graphData.nodes.map(n => ({ group: 'nodes', ...n })),
+            ...graphData.edges.map(e => ({ group: 'edges', ...e }))
+        ];
 
-        const svg = select(svgRef.current);
-        const g = select(gRef.current);
+        // Theme-matching stylesheet for the graph
+        const style: any[] = [
+            {
+                selector: 'node',
+                style: {
+                    'background-color': '#0c4a6e',
+                    'border-color': '#38bdf8',
+                    'border-width': 2,
+                    'label': 'data(label)',
+                    'color': '#e0f2fe',
+                    'font-size': '14px',
+                    'text-valign': 'center',
+                    'text-halign': 'center',
+                    'padding': '12px',
+                    'shape': 'round-rectangle',
+                    'text-wrap': 'wrap',
+                    'text-max-width': '100px',
+                }
+            },
+            {
+                selector: 'edge',
+                style: {
+                    'width': 1.5,
+                    'line-color': '#38bdf8',
+                    'target-arrow-color': '#38bdf8',
+                    'target-arrow-shape': 'triangle',
+                    'curve-style': 'bezier',
+                    'label': 'data(label)',
+                    'color': '#bae6fd',
+                    'font-size': '10px',
+                    'text-rotation': 'autorotate',
+                    'edge-text-rotation': 'autorotate'
+                }
+            },
+            {
+                selector: '.highlighted',
+                style: {
+                     'background-color': '#0ea5e9',
+                    'border-color': '#7dd3fc',
+                    'line-color': '#7dd3fc',
+                    'target-arrow-color': '#7dd3fc',
+                    'transition-property': 'background-color, border-color, line-color, target-arrow-color',
+                    'transition-duration': '0.2s'
+                }
+            }
+        ];
 
-        const zoomBehavior = zoom()
-            .scaleExtent([0.1, 8])
-            .on('zoom', (event) => {
-                g.attr('transform', event.transform);
-            });
-        
-        (svg as any).call(zoomBehavior);
-
-        return () => {
-            (svg as any).on('.zoom', null);
+        // Layout configuration
+        const layout = {
+            name: 'cola',
+            animate: isInteractive,
+            nodeSpacing: 60,
+            edgeLength: 150,
+            fit: true,
+            padding: 30,
         };
-    }, [isInteractive]);
+        
+        // Initialize Cytoscape
+        cyRef.current = cytoscape({
+            container: containerRef.current,
+            elements,
+            style,
+            layout,
+            userZoomingEnabled: isInteractive,
+            userPanningEnabled: isInteractive,
+            boxSelectionEnabled: isInteractive,
+            minZoom: 0.2,
+            maxZoom: 3
+        });
+        
+        // Add hover effect
+        if (isInteractive) {
+            cyRef.current.on('mouseover', 'node', (event: any) => {
+                const node = event.target;
+                node.neighborhood().addClass('highlighted');
+                node.addClass('highlighted');
+            });
+            cyRef.current.on('mouseout', 'node', (event: any) => {
+                 const node = event.target;
+                 node.neighborhood().removeClass('highlighted');
+                 node.removeClass('highlighted');
+            });
+        }
 
-    return (
-        <svg ref={svgRef} viewBox={viewBox} className="w-full h-full">
-            <defs>
-                <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5"
-                    markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8" />
-                </marker>
-            </defs>
-            <g ref={gRef}>
-                {graphData.edges.map((edge: Edge) => {
-                    const sourceNode = graphData.nodes.find(n => n.id === edge.source);
-                    const targetNode = graphData.nodes.find(n => n.id === edge.target);
-                    if (!sourceNode || !targetNode) return null;
 
-                    return (
-                        <g key={edge.id}>
-                            <line
-                                x1={sourceNode.position.x}
-                                y1={sourceNode.position.y}
-                                x2={targetNode.position.x}
-                                y2={targetNode.position.y}
-                                stroke="#38bdf8"
-                                strokeWidth="1.5"
-                                markerEnd="url(#arrow)"
-                            />
-                            {edge.label && (
-                                <text
-                                    x={(sourceNode.position.x + targetNode.position.x) / 2}
-                                    y={(sourceNode.position.y + targetNode.position.y) / 2}
-                                    fill="#bae6fd"
-                                    fontSize="10"
-                                    textAnchor="middle"
-                                    dy="-4"
-                                >
-                                    {edge.label}
-                                </text>
-                            )}
-                        </g>
-                    );
-                })}
-                {graphData.nodes.map((node: Node) => (
-                     <g key={node.id} transform={`translate(${node.position.x}, ${node.position.y})`}>
-                        <rect x="-45" y="-15" width="90" height="30" rx="8" ry="8" fill="#0c4a6e" stroke="#38bdf8" />
-                        <text
-                            fill="#e0f2fe"
-                            fontSize="12"
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            style={{ pointerEvents: 'none' }}
-                        >
-                            {node.data.label}
-                        </text>
-                    </g>
-                ))}
-            </g>
-        </svg>
-    );
+        // Cleanup on unmount
+        return () => {
+            if (cyRef.current) {
+                cyRef.current.destroy();
+            }
+        };
+    }, [graphData, isInteractive]);
+
+    return <div ref={containerRef} className="w-full h-full" />;
 };
 
-// FIX: Define KnowledgeGraphProps to resolve type error.
-interface KnowledgeGraphProps {
-    graphData: KnowledgeGraphData;
-}
 
-const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ graphData }) => {
+const KnowledgeGraph: React.FC<{ graphData: KnowledgeGraphData }> = ({ graphData }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const modalRoot = document.getElementById('modal-root');
 
@@ -136,7 +151,7 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = ({ graphData }) => {
                         <XIcon className="w-5 h-5" />
                     </button>
                 </header>
-                <div className="flex-1 bg-black/20">
+                <div className="flex-1 bg-black/20 overflow-hidden rounded-b-xl">
                     <CustomKnowledgeGraph graphData={graphData} isInteractive={true} />
                 </div>
             </div>

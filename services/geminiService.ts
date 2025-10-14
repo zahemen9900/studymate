@@ -109,47 +109,46 @@ const knowledgeGraphSchema = {
     properties: {
         nodes: {
             type: Type.ARRAY,
-            description: "A list of nodes in the knowledge graph.",
+            description: "A list of nodes for the graph. Follows Cytoscape.js format.",
             items: {
                 type: Type.OBJECT,
                 properties: {
-                    id: { type: Type.STRING, description: "Unique identifier for the node." },
                     data: {
                         type: Type.OBJECT,
                         properties: {
+                            id: { type: Type.STRING, description: "Unique identifier for the node." },
                             label: { type: Type.STRING, description: "The display label for the node." }
                         },
-                        required: ["label"]
-                    },
-                    position: {
-                        type: Type.OBJECT,
-                        properties: {
-                            x: { type: Type.NUMBER, description: "The x-coordinate for the node's initial position." },
-                            y: { type: Type.NUMBER, description: "The y-coordinate for the node's initial position." }
-                        },
-                         required: ["x", "y"]
+                        required: ["id", "label"]
                     }
                 },
-                required: ["id", "data", "position"]
+                required: ["data"]
             }
         },
         edges: {
             type: Type.ARRAY,
-            description: "A list of edges connecting the nodes.",
+            description: "A list of edges connecting nodes. Follows Cytoscape.js format.",
             items: {
                 type: Type.OBJECT,
                 properties: {
-                    id: { type: Type.STRING, description: "Unique identifier for the edge (e.g., 'e1-2')." },
-                    source: { type: Type.STRING, description: "The ID of the source node." },
-                    target: { type: Type.STRING, description: "The ID of the target node." },
-                    label: { type: Type.STRING, description: "Optional label describing the relationship." }
+                    data: {
+                        type: Type.OBJECT,
+                        properties: {
+                            id: { type: Type.STRING, description: "Unique identifier for the edge (e.g., 'e1-2')." },
+                            source: { type: Type.STRING, description: "The ID of the source node." },
+                            target: { type: Type.STRING, description: "The ID of the target node." },
+                            label: { type: Type.STRING, description: "Optional label describing the relationship." }
+                        },
+                        required: ["id", "source", "target"]
+                    }
                 },
-                required: ["id", "source", "target"]
+                required: ["data"]
             }
         }
     },
     required: ["nodes", "edges"]
 };
+
 
 export async function* generateTutorResponseStream(prompt: string, history: Message[], settings: UserSettings, files: File[]): AsyncGenerator<string> {
     try {
@@ -329,7 +328,7 @@ export const generateKnowledgeGraph = async (concept: string): Promise<Knowledge
     try {
         const response = await ai.models.generateContent({
             model: model,
-            contents: `Based on the following text, create a knowledge graph with nodes and edges. Each node must have a unique ID, a label, and an x/y position between 0 and 500. Each edge must link two nodes.\n\n---\n${concept}\n---`,
+            contents: `Based on the following text, create a knowledge graph with nodes and edges suitable for Cytoscape.js. Each node's data object must have a unique 'id' and a 'label'. Each edge's data object must have a unique 'id', a 'source' node id, and a 'target' node id.\n\n---\n${concept}\n---`,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: knowledgeGraphSchema,

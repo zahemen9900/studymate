@@ -91,57 +91,77 @@ const OnboardingModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ i
     const content = (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in overflow-hidden">
             <div className="absolute top-1/4 -right-40 w-[400px] h-[400px] bg-gradient-to-tr from-primary-500 to-purple-600 rounded-full opacity-20 blur-3xl animate-blob-animate" />
-            <div className="relative w-full max-w-2xl bg-surface/80 backdrop-blur-lg rounded-xl shadow-2xl flex flex-col border border-white/10 overflow-hidden z-10">
-                <div className="p-8 space-y-6 text-center h-96 flex flex-col justify-center">
-                    {step === 1 && (
-                         <div className="animate-fade-in">
-                            <h2 className="text-4xl font-bold text-white mb-4">Welcome to StudyMate!</h2>
-                            <p className="text-2xl text-primary-300 h-8 mb-4">
-                                I'm <span className="font-georgia italic border-r-2 border-primary-300 animate-pulse">{text}</span>
-                            </p>
-                            <p className="text-gray-300 max-w-md mx-auto">I'm here to help you understand any subject, prepare for exams, and make learning more interactive and fun.</p>
-                        </div>
-                    )}
-                     {step === 2 && (
-                        <div className="animate-fade-in">
-                            <h2 className="text-3xl font-bold text-white mb-6">What Can I Do?</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-left">
-                                {features.map(f => (
-                                    <div key={f.title} className="flex items-start space-x-3">
-                                        <div className="flex-shrink-0 mt-1">{f.icon}</div>
-                                        <div>
-                                            <h3 className="font-semibold text-white">{f.title}</h3>
-                                            <p className="text-xs text-gray-400">{f.description}</p>
-                                        </div>
-                                    </div>
-                                ))}
+            <div className="relative w-full max-w-4xl bg-surface/80 backdrop-blur-lg rounded-xl shadow-2xl flex flex-col md:flex-row border border-white/10 overflow-hidden z-10 h-auto md:h-[32rem]">
+                
+                <div className="hidden md:flex flex-col items-center justify-center w-2/5 bg-background/30 p-8 border-r border-white/10">
+                    <div className="relative w-48 h-48">
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary-600 to-purple-700 rounded-full opacity-30 blur-2xl"></div>
+                        {step === 1 && <BrainIcon className="relative w-full h-full text-primary-300 animate-fade-in" />}
+                        {step === 2 && (
+                             <div className="relative w-full h-full grid grid-cols-3 gap-4 items-center justify-center animate-fade-in">
+                                {features.map((f, i) => (
+                                   <div key={i} className={`p-2 bg-white/5 rounded-full`}>
+                                      {React.cloneElement(f.icon, { className: "w-6 h-6 text-primary-300 mx-auto" })}
+                                   </div>
+                               ))}
                             </div>
-                        </div>
-                    )}
-                     {step === 3 && (
-                        <div className="animate-fade-in">
-                             <div className="inline-block p-3 bg-background rounded-full mb-4">
-                                <BrainIcon className="w-8 h-8 text-primary-400" />
-                            </div>
-                            <h2 className="text-3xl font-bold text-white mb-4">Always Evolving</h2>
-                            <p className="text-gray-300 max-w-md mx-auto">StudyMate is constantly learning and improving. We're working hard to bring you more powerful features soon. We'd love to hear your feedback!</p>
-                        </div>
-                    )}
+                        )}
+                        {step === 3 && <SparklesIcon className="relative w-full h-full text-primary-300 animate-fade-in" />}
+                    </div>
                 </div>
 
-                <footer className="p-4 bg-background/50 border-t border-white/10 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className={`w-2 h-2 rounded-full transition-colors ${step === i ? 'bg-primary-500' : 'bg-gray-600'}`}></div>
-                        ))}
+                <div className="flex flex-col flex-1">
+                    <div className="p-8 space-y-6 text-center flex-1 flex flex-col justify-center min-h-[24rem] md:min-h-0">
+                        {step === 1 && (
+                            <div className="animate-fade-in">
+                                <h2 className="text-4xl font-bold text-white mb-4">Welcome to StudyMate!</h2>
+                                <p className="text-2xl text-primary-300 h-8 mb-4 font-georgia italic">
+                                    I'm <span className="border-r-2 border-primary-300 animate-pulse">{text}</span>
+                                </p>
+                                <p className="text-gray-300 max-w-md mx-auto">I'm here to help you understand any subject, prepare for exams, and make learning more interactive and fun.</p>
+                            </div>
+                        )}
+                        {step === 2 && (
+                            <div className="animate-fade-in">
+                                <h2 className="text-3xl font-bold text-white mb-6">What Can I Do?</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                                    {features.map(f => (
+                                        <div key={f.title} className="flex items-start space-x-3">
+                                            <div className="flex-shrink-0 mt-1">{f.icon}</div>
+                                            <div>
+                                                <h3 className="font-semibold text-white">{f.title}</h3>
+                                                <p className="text-xs text-gray-400">{f.description}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {step === 3 && (
+                            <div className="animate-fade-in">
+                                <div className="inline-block p-3 bg-background rounded-full mb-4">
+                                    <BrainIcon className="w-8 h-8 text-primary-400" />
+                                </div>
+                                <h2 className="text-3xl font-bold text-white mb-4">Always Evolving</h2>
+                                <p className="text-gray-300 max-w-md mx-auto">StudyMate is constantly learning and improving. We're working hard to bring you more powerful features soon. We'd love to hear your feedback!</p>
+                            </div>
+                        )}
                     </div>
-                     <div className="flex items-center gap-4">
-                        {step > 1 && <button onClick={handleBack} className="px-4 py-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors">Back</button>}
-                        {step < 3 && <button onClick={handleNext} className="px-5 py-2 bg-primary-600 text-white font-bold rounded-lg hover:bg-primary-700 transition-all">Next</button>}
-                        {step === 3 && <button onClick={onClose} className="px-5 py-2 bg-primary-600 text-white font-bold rounded-lg hover:bg-primary-700 transition-all">Let's Get Started!</button>}
-                    </div>
-                </footer>
-                 <button onClick={onClose} className="absolute top-3 right-3 p-2 rounded-md text-gray-500 hover:text-white hover:bg-white/10">
+
+                    <footer className="p-4 bg-background/50 border-t border-white/10 flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className={`w-2 h-2 rounded-full transition-colors ${step === i ? 'bg-primary-500' : 'bg-gray-600'}`}></div>
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-4">
+                            {step > 1 && <button onClick={handleBack} className="px-4 py-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors">Back</button>}
+                            {step < 3 && <button onClick={handleNext} className="px-5 py-2 bg-primary-600 text-white font-bold rounded-lg hover:bg-primary-700 transition-all">Next</button>}
+                            {step === 3 && <button onClick={onClose} className="px-5 py-2 bg-primary-600 text-white font-bold rounded-lg hover:bg-primary-700 transition-all">Let's Get Started!</button>}
+                        </div>
+                    </footer>
+                </div>
+                 <button onClick={onClose} className="absolute top-3 right-3 p-2 rounded-md text-gray-500 hover:text-white hover:bg-white/10 z-20">
                     <XIcon className="w-5 h-5" />
                 </button>
             </div>
@@ -475,6 +495,7 @@ const App: React.FC = () => {
     const handleOnboardingFinish = () => {
         localStorage.setItem('userSettings', JSON.stringify(userSettings));
         setIsOnboardingOpen(false);
+        setIsStarted(true);
     };
 
     if (!isStarted && !isOnboardingOpen) {

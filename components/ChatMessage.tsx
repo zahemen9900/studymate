@@ -9,7 +9,7 @@ import Quiz from './Quiz';
 import Flashcards from './Flashcards';
 import StudyNotes from './StudyNotes';
 import KnowledgeGraph from './KnowledgeGraph';
-import { UserIcon, LightbulbIcon } from './Icons';
+import { UserIcon, LightbulbIcon, ChevronDownIcon } from './Icons';
 
 interface ChatMessageProps {
     message: Message;
@@ -26,6 +26,7 @@ const ThinkingAccordion: React.FC<{ content: string }> = ({ content }) => {
                 className="flex justify-between items-center w-full py-2 text-sm text-gray-400 hover:text-white"
             >
                 <span>Model's Thinking Process</span>
+                <ChevronDownIcon className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
             {isOpen && (
                 <div className="pb-2 pr-4 prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 text-gray-400">

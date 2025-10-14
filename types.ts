@@ -28,16 +28,19 @@ export interface StudyNotesData {
 }
 
 export interface Node {
-    id: string;
-    data: { label: string };
-    position: { x: number; y: number };
+    data: {
+        id: string;
+        label: string;
+    };
 }
 
 export interface Edge {
-    id: string;
-    source: string;
-    target: string;
-    label?: string;
+    data: {
+        id: string;
+        source: string;
+        target: string;
+        label?: string;
+    };
 }
 
 export interface KnowledgeGraphData {
