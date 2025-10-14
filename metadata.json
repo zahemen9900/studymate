@@ -1,0 +1,5 @@
+{
+  "name": "StudyMate",
+  "description": "An AI-assisted tutor that can explain concepts, create analogies, and quiz you on any subject. Powered by Gemini.",
+  "requestFramePermissions": []
+}
